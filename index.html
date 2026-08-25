@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser-Based Image Metadata Remover (Exif Cleaner)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Privacy Exif Cleaner</h1>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="about.html">About & Contact</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h2>Remove Metadata During Re-Encoding</h2>
+      <p class="description">
+        100% Client-Side. Your photos are re-encoded directly in your browser without uploading to any server.
+      </p>
+    </section>
+
+    <section class="uploader">
+      <div id="drop-zone" class="drop-zone">
+        <p>Drag & Drop your images here, or <span>browse</span></p>
+        <p class="sub-text">Supports JPG, PNG, WebP (Multiple files supported)</p>
+        <input type="file" id="file-input" accept="image/jpeg, image/png, image/webp" multiple hidden>
+      </div>
+
+      <div id="preview-section" class="preview-section hidden">
+        <h3>Processed Images</h3>
+        <div id="file-list" class="file-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 Privacy Exif Cleaner. All processing is strictly local to your browser.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
