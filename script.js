@@ -38,18 +38,11 @@ function handleFiles(files) {
     processImage(file);
   });
 
-  // 同じファイルを再選択できるようにする
   fileInput.value = '';
 }
 
 async function processImage(file) {
   try {
-    /*
-     * createImageBitmap + imageOrientation:"from-image"
-     *
-     * スマホ写真などのExif Orientationを考慮して、
-     * 見た目の向き・縦横比を維持した状態でCanvasへ描画する。
-     */
     const bitmap = await createImageBitmap(file, {
       imageOrientation: 'from-image'
     });
@@ -61,40 +54,42 @@ async function processImage(file) {
 
     const ctx = canvas.getContext('2d');
 
-    ctx.drawImage(
-      bitmap,
-      0,
-      0,
-      bitmap.width,
-      bitmap.height
-    );
+    if (!ctx) {
+      throw new Error('Canvas is not supported.');
+    }
+
+    ctx.drawImage(bitmap, 0, 0);
 
     bitmap.close();
 
-    /*
-     * 再エンコードすることで元画像のExif等を引き継がない。
-     */
-    const quality = file.type === 'image/png' ? undefined : 0.92;
+    // Canvasから新しい画像データとして再エンコード
+    const outputType = file.type;
+    const quality =
+      outputType === 'image/png' ? undefined : 0.92;
 
-    const cleanedBlob = await new Promise(resolve => {
-      canvas.toBlob(
-        resolve,
-        file.type,
-        quality
-      );
+    const cleanedBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Image conversion failed.'));
+        }
+      }, outputType, quality);
     });
-
-    if (!cleanedBlob) {
-      throw new Error('Image conversion failed.');
-    }
 
     const cleanedUrl = URL.createObjectURL(cleanedBlob);
 
     const originalSize = formatSize(file.size);
     const cleanedSize = formatSize(cleanedBlob.size);
 
+    const outputName = createOutputName(
+      file.name,
+      outputType
+    );
+
     renderFileItem(
       file.name,
+      outputName,
       originalSize,
       cleanedSize,
       cleanedUrl
@@ -106,6 +101,24 @@ async function processImage(file) {
   }
 }
 
+function createOutputName(originalName, mimeType) {
+  const nameWithoutExtension =
+    originalName.replace(/\.[^/.]+$/, '');
+
+  let extension = 'jpg';
+
+  if (mimeType === 'image/png') {
+    extension = 'png';
+  }
+
+  if (mimeType === 'image/webp') {
+    extension = 'webp';
+  }
+
+  // 元画像と絶対に区別しやすい名前
+  return `cleaned_${nameWithoutExtension}_${Date.now()}.${extension}`;
+}
+
 function formatSize(bytes) {
   if (bytes < 1024 * 1024) {
     return `${(bytes / 1024).toFixed(1)} KB`;
@@ -115,7 +128,8 @@ function formatSize(bytes) {
 }
 
 function renderFileItem(
-  name,
+  originalName,
+  outputName,
   originalSize,
   cleanedSize,
   downloadUrl
@@ -126,21 +140,29 @@ function renderFileItem(
   const info = document.createElement('div');
 
   const title = document.createElement('strong');
-  title.textContent = name;
+  title.textContent = originalName;
 
-  const br = document.createElement('br');
+  const br1 = document.createElement('br');
 
   const size = document.createElement('small');
   size.textContent =
-    `Original: ${originalSize} → Cleaned: ${cleanedSize}`;
+    `Original: ${originalSize} → Processed: ${cleanedSize}`;
+
+  const br2 = document.createElement('br');
+
+  const outputInfo = document.createElement('small');
+  outputInfo.textContent =
+    `Output: ${outputName}`;
 
   info.appendChild(title);
-  info.appendChild(br);
+  info.appendChild(br1);
   info.appendChild(size);
+  info.appendChild(br2);
+  info.appendChild(outputInfo);
 
   const button = document.createElement('a');
   button.href = downloadUrl;
-  button.download = `cleaned_${name}`;
+  button.download = outputName;
   button.className = 'download-btn';
   button.textContent = 'Download';
 
